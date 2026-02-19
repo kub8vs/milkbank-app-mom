@@ -1,12 +1,47 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useApp } from "@/contexts/AppContext";
+import BottomNav from "@/components/BottomNav";
+import AccessibilityHub from "@/components/AccessibilityHub";
+import HomePage from "@/pages/HomePage";
+import DiaryPage from "@/pages/DiaryPage";
+import MapPage from "@/pages/MapPage";
+import KnowledgePage from "@/pages/KnowledgePage";
 
-const Index = () => {
+const pageVariants = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -16 },
+};
+
+const PAGES: Record<string, React.ComponentType> = {
+  home: HomePage,
+  diary: DiaryPage,
+  map: MapPage,
+  knowledge: KnowledgePage,
+};
+
+const Index: React.FC = () => {
+  const { activeTab } = useApp();
+  const ActivePage = PAGES[activeTab] ?? HomePage;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="relative min-h-dvh">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.22, ease: "easeOut" }}
+        >
+          <ActivePage />
+        </motion.div>
+      </AnimatePresence>
+
+      <BottomNav />
+      <AccessibilityHub />
     </div>
   );
 };
