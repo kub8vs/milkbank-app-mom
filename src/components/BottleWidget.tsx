@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { Droplets } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -6,101 +6,127 @@ import { t } from "@/i18n/translations";
 
 interface BottleWidgetProps {
   maxCapacity?: number;
+  customAmount?: number; // Pozwala wyświetlić konkretną ilość (np. w modalu szczegółów)
 }
 
-const BottleWidget: React.FC<BottleWidgetProps> = ({ maxCapacity = 600 }) => {
+const BottleWidget: React.FC<BottleWidgetProps> = ({ maxCapacity = 250, customAmount }) => {
   const { totalStoredMl, language } = useApp();
-  const fillPercent = Math.min((totalStoredMl / maxCapacity) * 100, 100);
 
-  const getColor = () => {
-    if (fillPercent > 60) return "hsl(201 80% 55%)";
-    if (fillPercent > 30) return "hsl(201 75% 68%)";
-    return "hsl(201 70% 80%)";
-  };
+  // Jeśli podano customAmount (widok szczegółów), używamy go. 
+  // W przeciwnym razie używamy całkowitej ilości z kontekstu (widok główny).
+  const displayAmount = customAmount !== undefined ? customAmount : totalStoredMl;
+  
+  // Obliczamy procent wypełnienia względem pojemności (maxCapacity)
+  const fillPercent = Math.min((displayAmount / maxCapacity) * 100, 100);
+
+  // Kolory mleka (Biel i bardzo jasny różowy dla cieni)
+  const milkColor = "#FFFFFF"; 
+  const milkShadow = "#FFF0F5"; 
 
   return (
-    <div className="glass-card p-5 flex flex-col items-center gap-3">
-      <div className="flex items-center gap-2">
-        <Droplets size={18} style={{ color: "hsl(var(--sky-blue-deep))" }} />
-        <span className="font-display font-semibold text-sm" style={{ color: "hsl(var(--foreground))" }}>
-          {t("bottle_stored", language)}
-        </span>
-      </div>
+    <div className={`flex flex-col items-center gap-3 ${!customAmount ? 'glass-card p-5' : ''}`}>
+      {/* Nagłówek - pokazujemy tylko na ekranie głównym */}
+      {!customAmount && (
+        <div className="flex items-center gap-2">
+          <Droplets size={18} className="text-pink-400" />
+          <span className="font-display font-semibold text-sm text-slate-700">
+            {t("bottle_stored", language)}
+          </span>
+        </div>
+      )}
 
-      {/* Bottle SVG */}
-      <div className="relative w-20 h-32">
+      {/* Kontener butelki */}
+      <div className="relative w-24 h-40">
         <svg viewBox="0 0 80 130" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          {/* Bottle neck */}
-          <rect x="28" y="5" width="24" height="20" rx="8" fill="hsl(var(--border))" />
-          {/* Bottle body outline */}
+          {/* Szyjka butelki */}
+          <rect x="28" y="15" width="24" height="15" rx="4" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
+          
+          {/* Kształt butelki (tło/szkło) */}
           <path
-            d="M 18 28 Q 10 40 10 60 L 10 105 Q 10 122 40 122 Q 70 122 70 105 L 70 60 Q 70 40 62 28 Z"
-            fill="hsl(var(--muted))"
-            stroke="hsl(var(--border))"
-            strokeWidth="1.5"
+            d="M 18 28 Q 10 40 10 60 L 10 110 Q 10 125 40 125 Q 70 125 70 110 L 70 60 Q 70 40 62 28 Z"
+            fill="rgba(241, 245, 249, 0.4)"
+            stroke="#e2e8f0"
+            strokeWidth="2"
           />
-          {/* Clip for fill */}
+
+          {/* Maska (ClipPath) - aby mleko nie "wylewało" się poza obrys butelki */}
           <defs>
-            <clipPath id="bottle-clip">
-              <path d="M 18 28 Q 10 40 10 60 L 10 105 Q 10 122 40 122 Q 70 122 70 105 L 70 60 Q 70 40 62 28 Z" />
+            <clipPath id="bottle-clip-path">
+              <path d="M 18 28 Q 10 40 10 60 L 10 110 Q 10 125 40 125 Q 70 125 70 110 L 70 60 Q 70 40 62 28 Z" />
             </clipPath>
           </defs>
-          {/* Milk fill - animated */}
+
+          {/* Wypełnienie mlekiem (Animowany prostokąt) */}
           <motion.rect
-            x="10"
-            y={122 - (94 * fillPercent) / 100}
-            width="60"
-            height={(94 * fillPercent) / 100 + 10}
-            fill={getColor()}
-            clipPath="url(#bottle-clip)"
-            initial={{ y: 122, height: 0 }}
+            x="0"
+            y={125 - (97 * fillPercent) / 100}
+            width="80"
+            height="130"
+            fill={milkColor}
+            clipPath="url(#bottle-clip-path)"
+            initial={{ height: 0, y: 125 }}
             animate={{
-              y: 122 - (94 * fillPercent) / 100,
-              height: (94 * fillPercent) / 100 + 10,
+              y: 125 - (97 * fillPercent) / 100,
+              height: 130,
             }}
-            transition={{ duration: 1.2, ease: [0.34, 1.2, 0.64, 1] }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
           />
-          {/* Wave overlay */}
-          {totalStoredMl > 0 && fillPercent > 0 && (
+
+          {/* Efekt fali na górze mleka */}
+          {displayAmount > 0 && (
             <motion.ellipse
               cx="40"
-              cy={122 - (94 * fillPercent) / 100}
+              cy={125 - (97 * fillPercent) / 100}
               rx="30"
-              ry={4}
-              fill={getColor()}
-              opacity="0.6"
-              animate={{ ry: [4, 2, 4] }}
+              ry="4"
+              fill={milkShadow}
+              clipPath="url(#bottle-clip-path)"
+              animate={{
+                ry: [3, 5, 3],
+              }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             />
           )}
-          {/* Cap */}
-          <rect x="26" y="2" width="28" height="10" rx="5" fill="hsl(var(--primary))" />
-          {/* Measurement lines */}
-          <line x1="65" y1="75" x2="70" y2="75" stroke="hsl(var(--border))" strokeWidth="1.5" />
-          <line x1="65" y1="95" x2="70" y2="95" stroke="hsl(var(--border))" strokeWidth="1.5" />
-          <line x1="65" y1="55" x2="70" y2="55" stroke="hsl(var(--border))" strokeWidth="1.5" />
+
+          {/* Zakrętka (Różowa) */}
+          <rect x="24" y="5" width="32" height="14" rx="6" fill="#ec4899" />
+
+          {/* Linie miarki na butelce */}
+          <g stroke="#cbd5e1" strokeWidth="1" opacity="0.6">
+            <line x1="55" y1="50" x2="65" y2="50" />
+            <line x1="55" y1="75" x2="65" y2="75" />
+            <line x1="55" y1="100" x2="65" y2="100" />
+          </g>
         </svg>
+
+        {/* Licznik ML wewnątrz butelki */}
+        <div className="absolute inset-0 flex items-center justify-center pt-8">
+            <motion.span 
+              key={displayAmount}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="font-black text-xl text-slate-700 drop-shadow-sm"
+            >
+              {displayAmount}
+            </motion.span>
+        </div>
       </div>
 
+      {/* Podpis pod butelką */}
       <div className="text-center">
-        {totalStoredMl > 0 ? (
+        {displayAmount > 0 ? (
           <>
-            <motion.div
-              className="font-display font-black text-2xl"
-              style={{ color: "hsl(var(--sky-blue-deep))" }}
-              key={totalStoredMl}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            >
-              {totalStoredMl} ml
-            </motion.div>
-            <div className="text-xs font-medium mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
-              {Math.round(fillPercent)}% pojemności
+            <div className="font-display font-black text-2xl text-pink-500">
+              {displayAmount} ml
             </div>
+            {!customAmount && (
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">
+                {Math.round(fillPercent)}% Pojemności
+              </div>
+            )}
           </>
         ) : (
-          <div className="text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
+          <div className="text-sm text-slate-400 italic">
             {t("bottle_empty", language)}
           </div>
         )}

@@ -4,6 +4,30 @@ import { Plus, Check } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { t } from "@/i18n/translations";
 
+// --- DODANE: Funkcja pomocnicza do komunikacji z bazą MySQL ---
+const wyslijDoBazyMySQL = async (ilosc: number) => {
+  try {
+    const response = await fetch('http://192.168.1.86:3000/api/dodaj-mleko', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        matka_id: 1, // ID testowe
+        objetosc_ml: ilosc,
+        data_odciagniecia: new Date().toISOString().split('T')[0],
+        typ_przechowywania: 'lodowka' // domyślny typ
+      }),
+    });
+    if (response.ok) {
+      console.log("✅ Dane zapisane w MySQL");
+    }
+  } catch (error) {
+    console.error("❌ Błąd bazy danych:", error);
+  }
+};
+// --- KONIEC DODATKU ---
+
 const QUICK_AMOUNTS = [50, 100, 150, 200];
 
 const MilkEntry: React.FC = () => {
@@ -15,7 +39,13 @@ const MilkEntry: React.FC = () => {
   const handleAdd = () => {
     const amount = selected ?? (custom ? parseInt(custom) : 0);
     if (!amount || amount <= 0) return;
+    
+    // TWOJA ORYGINALNA LOGIKA
     addMilkEntry(amount);
+    
+    // DODANE: Wywołanie zapisu do bazy MySQL
+    wyslijDoBazyMySQL(amount);
+
     setAdded(true);
     setTimeout(() => {
       setAdded(false);
