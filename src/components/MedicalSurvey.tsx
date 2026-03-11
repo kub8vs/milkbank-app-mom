@@ -57,13 +57,14 @@ const MedicalSurvey = ({ onComplete }: { onComplete: () => void }) => {
 
   const submitAllData = async (finalAnswers: any) => {
     try {
-      await fetch('http://192.168.1.86:3000/api/zapisz-ankiete', {
+      // Zmieniono adres IP na 192.168.1.108 oraz endpoint na /api/save-survey
+      await fetch('http://192.168.1.108:3000/api/save-survey', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          matka_id: 1, 
+          user_id: 1, 
           ...personalData,
-          odpowiedzi: finalAnswers 
+          answers: finalAnswers 
         })
       });
       setStage("summary");
